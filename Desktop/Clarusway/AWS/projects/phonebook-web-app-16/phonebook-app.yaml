@@ -11,7 +11,7 @@ Description: |
   from Github repository.
 Parameters:
   MyVPC:
-
+    Type: AWS::EC2::VPC::Id
   Subnets:
 
   KeyName: 
@@ -23,13 +23,58 @@ Parameters:
 Resources:
 
   ALBSecurityGroup:
-
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow HTTP for web server # Required
+      VpcId: !Ref MyVPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp # Required
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
   WebServerSecurityGroup:
-
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow SSH for anywhere and HTTP for webserver from only ALB # Required
+      VpcId: !Ref MyVPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp # Required
+          FromPort: 80
+          ToPort: 80
+          SourceSecurityGroupId: : !GetAtt ALBSecurityGroup.GroupId
+        - IpProtocol: tcp # Required
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
   RDSecurityGroup:
-
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow MySQL only from webserver # Required
+      VpcId: !Ref MyVPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp # Required
+          FromPort: 3306
+          ToPort: 3306
+          SourceSecurityGroupId: : !GetAtt WebServerSecurityGroup.GroupId
   DBInstance:
-
+    Type: AWS::RDS::DBInstance
+    Properties:
+      AllocatedStorage: 20
+      AllowMajorVersionUpgrade: false
+      AutoMinorVersionUpgrade: true
+      BackupRetentionPeriod: 0
+      DBInstanceClass: db.t4g.micro
+      DBInstanceIdentifier: phonebook-App
+      DBName: ondia_phonebook
+      Engine: MySQL
+      EngineVersion: 8.0.45
+      MasterUserPassword: "String"
+      MasterUsername: "String"
+      Port: 3306
+      PubliclyAccessible: true
+      VPCSecurityGroups: 
+        - !GetAtt RDSecurityGroup.GroupId
+    DeletionPolicy: Retain
   MySSMRole:
 
   MyInstanceProfile:
